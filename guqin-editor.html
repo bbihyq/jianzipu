@@ -1,0 +1,1928 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>古琴谱编辑器 — 简谱·减字谱对照</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700;900&family=Noto+Sans+SC:wght@300;400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --ink: #1a1208;
+  --ink-light: #3d2e10;
+  --ink-dim: #7a6a50;
+  --paper: #f7f3e9;
+  --paper-warm: #ede8d8;
+  --paper-line: #d4c9a8;
+  --red: #8b2020;
+  --gold: #9b7a2a;
+  --bg-editor: #1c1a14;
+  --bg-surface: #252218;
+  --bg-surface2: #2e2b1e;
+  --border: #3d3920;
+  --accent: #c8922a;
+  --accent2: #6b8c3a;
+  --text-ui: #e8e0cc;
+  --text-dim: #857d65;
+  --font-serif: 'Noto Serif SC', serif;
+  --font-sans: 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@font-face {
+  font-family: 'JianZiPu';
+  src: url('https://guqintabs.com/jianzipu/JianZiPu.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.jianzi-font {
+  font-family: 'JianZiPu', serif;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* 确保空白占位符音符不显示任何可能误触的装饰 */
+.note-glyph.placeholder-note {
+  visibility: hidden; /* 或者直接使用内容为 &nbsp; */
+  user-select: none;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-serif);
+  background: var(--bg-editor);
+  color: var(--text-ui);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== MENU BAR ===== */
+.menubar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 14px;
+  height: 38px;
+  gap: 2px;
+  flex-shrink: 0;
+  user-select: none;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 18px;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+.logo span { color: var(--accent2); }
+
+.menu-item { position: relative; }
+.menu-label {
+  padding: 5px 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-ui);
+  transition: background .15s;
+}
+.menu-item:hover .menu-label,
+.menu-item.open .menu-label { background: var(--accent); color: #fff; }
+
+.dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 190px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.6);
+  z-index: 999;
+  padding: 4px 0;
+}
+.menu-item.open .dropdown { display: block; }
+.dd-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-ui);
+  transition: background .1s;
+  gap: 14px;
+}
+.dd-item:hover { background: var(--bg-surface2); color: var(--accent); }
+.dd-shortcut { color: var(--text-dim); font-size: 11px; font-family: var(--font-mono); }
+.dd-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+.menubar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 5px 12px;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.tg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 10px;
+  border-right: 1px solid var(--border);
+}
+.tg:last-child { border-right: none; }
+.tg label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+.tb-select {
+  background: var(--bg-editor);
+  color: var(--text-ui);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 12px;
+  font-family: var(--font-serif);
+  height: 26px;
+  cursor: pointer;
+}
+.tb-select:focus { outline: none; border-color: var(--accent); }
+
+.tb-btn {
+  background: var(--bg-editor);
+  color: var(--text-ui);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 12px;
+  font-family: var(--font-serif);
+  cursor: pointer;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.tb-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tb-btn.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex;
+  background: var(--bg-editor);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.mode-btn {
+  padding: 3px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: background .15s, color .15s;
+  border: none;
+  background: none;
+  font-family: var(--font-serif);
+}
+.mode-btn.active { background: var(--accent); color: #fff; }
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tab {
+  padding: 7px 22px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.tab:hover { color: var(--text-ui); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ===== MAIN ===== */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Editor pane */
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.editor-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 3px 10px;
+  background: var(--bg-surface2);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.editors-split {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.editor-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+.editor-col:last-child { border-right: none; }
+
+.editor-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  background: var(--bg-surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.editor-col-header span { color: var(--accent); font-weight: 600; }
+
+textarea.code-input {
+  flex: 1;
+  background: #0f0e09;
+  color: #d4c898;
+  border: none;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.85;
+  resize: none;
+  outline: none;
+  tab-size: 2;
+}
+textarea.code-input::placeholder { color: #4a4430; }
+
+/* ===== PREVIEW PANE ===== */
+.preview-pane {
+  background: #e8e2d0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 12px;
+  min-width: 0;
+  min-height: 0; /* 让 flex 容器中的滚动高度可自适应 */
+}
+
+/* Ancient paper style */
+.score-paper {
+  background: transparent;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  box-shadow: none;
+  box-sizing: border-box;
+  font-family: var(--font-serif);
+  color: var(--ink);
+  position: relative;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  overflow-x: auto; /* avoid horizontal clipping when A4 is wider than viewport */
+}
+
+/* A4 paper page */
+.score-page {
+  width: 210mm;
+  height: 297mm;
+  background: #ffffff;
+  min-height: 0;
+  padding: 48px 56px 56px;
+  box-sizing: border-box;
+  box-shadow: none;
+  font-family: var(--font-serif);
+  color: var(--ink);
+  position: relative;
+  border: 1px solid rgba(0,0,0,.08);
+  overflow: hidden; /* content will be paginated by JS to avoid clipping */
+  flex-shrink: 0;
+}
+
+/* Paper texture lines */
+.score-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.score-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 16px;
+  margin-bottom: 20px;
+  color: var(--ink);
+  padding-left: 16px; /* compensate letter-spacing */
+}
+
+.score-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--ink-light);
+}
+
+.score-meta-left { display: flex; flex-direction: column; gap: 3px; }
+.score-meta-right { text-align: right; font-size: 12px; color: var(--ink-dim); }
+
+.score-divider {
+  border: none;
+  border-top: 1.5px solid var(--ink-dim);
+  margin: 10px 0 18px;
+  opacity: .5;
+}
+
+/* Section marker like [一] [二] */
+.section-marker {
+  font-size: 13px;
+  color: var(--red);
+  margin: 10px 0 4px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* Score line = one row of music */
+.score-line {
+  display: flex;
+  flex-wrap: nowrap; /* 每行占满页面宽度，不在行内换行 */
+  align-items: flex-start;
+  margin-bottom: 14px;
+  gap: 0;
+  position: relative;
+  width: 100%;
+}
+
+/* A single beat cell (note + jianzi below) */
+.beat-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0; /* 允许在行内按页面宽度收缩 */
+  padding: 0 2px;
+  position: relative;
+  cursor: default;
+  flex: 1 1 0; /* 在同一行中平均分配剩余宽度 */
+}
+
+/* ---- NOTE AREA (top half) ---- */
+.note-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 52px;
+  justify-content: center; /* 简谱数字与下方减字居中对齐 */
+  position: relative;
+}
+
+.note-octave-dots-top {
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 1px;
+  color: var(--ink);
+  height: 12px; /* 固定占位，避免在 note-area 固定高度内 flex 挤压 */
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  overflow: visible; /* 字号变大时仍允许显示溢出 */
+  transform: translateY(8px); /* 更靠近数字音符底部 */
+}
+
+.note-glyph {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+  position: relative;
+}
+.note-glyph.rest { color: var(--ink-dim); font-weight: 400; }
+.note-glyph .note-acc {
+  font-size: 10px;
+  vertical-align: super;
+  font-weight: 400;
+}
+
+.note-dotted::after {
+  content: '·';
+  font-size: 1.3em; /* 让附点更接近数字字号 */
+  position: absolute;
+  right: -0.6em;
+  bottom: 0;
+  font-weight: 700;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Double dotted note (..). Render 两个附点并压缩间距更清晰 */
+.note-dotted2::after {
+  content: '··';
+  font-size: 1.3em; /* 与 note-dotted 保持一致 */
+  position: absolute;
+  right: -0.6em;
+  bottom: 0.00em;
+  font-weight: 700;
+  z-index: 2;
+  pointer-events: none;
+  letter-spacing: -0.48em;
+}
+
+.note-octave-dots-bottom {
+  font-size: 8px;
+  line-height: 1;
+  letter-spacing: 1px;
+  height: 12px; /* 固定占位，避免在 note-area 固定高度内 flex 挤压 */
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 1px;
+  overflow: visible; /* 字号变大时仍允许显示溢出 */
+  transform: translateY(-10px); /* 更靠近数字音符底部 */
+}
+
+/* underline for fast notes */
+.note-underlines {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5px;
+  width: 100%;
+}
+.note-underline-bar {
+  height: 1.5px;
+  width: 90%;
+  background: var(--ink);
+}
+
+/* tie / slur arc  */
+.slur-container {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  overflow: visible;
+}
+
+/* barline */
+.bar-line-cell {
+  display: flex;
+  align-self: stretch;
+  padding: 0 5px;
+  flex: 0 0 auto; /* 小节线宽度保持固定，减少布局抖动 */
+}
+.bar-line-inner {
+  width: 1.5px;
+  background: var(--ink);
+  height: 48px;
+  margin-top: 0px;
+}
+.bar-line-double { display: flex; gap: 3px; }
+
+/* ---- JIANZI AREA (bottom half) ---- */
+.jianzi-area {
+  margin-top: 0;
+  min-height: 52px;
+  width: 100%;
+  display: flex;
+  justify-content: left;
+  align-items: center; /* 简谱数字正对下一行减字符号 */
+  padding-top: 0;
+  padding-left: 5px;
+}
+
+.jianzi-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-width: 22px;
+}
+
+/* The reconstructed jianzi character - rendered as stacked Chinese characters */
+.jianzi-render {
+  font-size: 11px;
+  line-height: 1.15;
+  color: var(--ink);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0px;
+  position: relative;
+}
+
+/* Main jianzi compound char */
+.jianzi-main {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink);
+  position: relative;
+  /* Simulate compound character by stacking */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.jianzi-top { font-size: 10px; line-height: 1.1; font-weight: 400; }
+.jianzi-mid { font-size: 16px; font-weight: 700; line-height: 1; }
+.jianzi-bot { font-size: 10px; line-height: 1.1; font-weight: 400; }
+
+/* Small annotations beside jianzi */
+.jianzi-anno {
+  font-size: 9px;
+  color: var(--ink-dim);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  margin-left: 1px;
+}
+
+.jianzi-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+/* String number */
+.string-num {
+  font-size: 9px;
+  color: var(--red);
+  font-weight: 700;
+  align-self: center;
+}
+
+/* technique label below jianzi */
+.jianzi-technique {
+  font-size: 9px;
+  color: var(--ink-dim);
+  text-align: center;
+  margin-top: 1px;
+  letter-spacing: .5px;
+}
+
+/* Empty jianzi placeholder */
+.jianzi-empty {
+  min-height: 48px;
+}
+
+/* ====  SLUR SVG lines ==== */
+.score-svg-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ===== SPLIT DIVIDER ===== */
+.split-divider {
+  width: 4px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.split-divider:hover { background: var(--accent); }
+
+/* ===== STATUS BAR ===== */
+.statusbar {
+  display: flex;
+  align-items: center;
+  background: #0d0c08;
+  border-top: 1px solid var(--border);
+  padding: 3px 14px;
+  gap: 18px;
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #5a9; display: inline-block; margin-right: 5px; }
+
+/* ===== JIANZI PALETTE ===== */
+.jianzi-palette {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  width: 360px;
+  max-height: 440px;
+  overflow-y: auto;
+  z-index: 500;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7);
+  display: none;
+}
+.jianzi-palette.open { display: block; }
+.palette-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: flex; justify-content: space-between; }
+.palette-close { cursor: pointer; color: var(--text-dim); }
+.palette-close:hover { color: var(--accent); }
+.palette-section { margin-bottom: 10px; }
+.palette-section-title { font-size: 11px; color: var(--accent2); margin-bottom: 5px; font-weight: 600; letter-spacing: 1px; }
+.palette-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+.palette-item {
+  background: var(--bg-editor);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-ui);
+  transition: background .12s;
+  font-family: var(--font-serif);
+  white-space: nowrap;
+}
+.palette-item:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.palette-item .pi-label { font-size: 9px; color: var(--text-dim); display: block; }
+
+/* ===== MODALS ===== */
+.modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 26px;
+  min-width: 380px;
+  max-width: 580px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal h3 { font-size: 16px; color: var(--accent); margin-bottom: 16px; }
+.modal label { display: block; font-size: 12px; color: var(--text-dim); margin: 12px 0 4px; }
+.modal input, .modal select, .modal textarea {
+  width: 100%;
+  background: var(--bg-editor);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-ui);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: var(--font-serif);
+}
+.modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: var(--accent); }
+.modal-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.modal-btn {
+  padding: 7px 18px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-serif);
+  transition: background .15s;
+}
+.modal-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.modal-btn.primary:hover { background: #a6751e; }
+.modal-btn.secondary { background: var(--bg-editor); color: var(--text-ui); }
+.modal-btn.secondary:hover { background: var(--bg-surface2); }
+
+/* Help table */
+.help-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+.help-table th, .help-table td { padding: 5px 8px; border: 1px solid var(--border); }
+.help-table th { background: var(--bg-surface2); color: var(--accent2); }
+.help-table td code { background: var(--bg-editor); padding: 1px 4px; border-radius: 3px; font-family: var(--font-mono); font-size: 11px; color: #8ecae6; }
+
+/* ===== NOTIF ===== */
+.notif {
+  position: fixed; bottom: 30px; right: 24px;
+  background: var(--bg-surface2); color: var(--text-ui);
+  border: 1px solid var(--accent);
+  border-radius: 8px; padding: 10px 18px;
+  font-size: 13px; z-index: 9999;
+  opacity: 0; transform: translateY(8px);
+  transition: all .3s; pointer-events: none;
+}
+.notif.show { opacity: 1; transform: translateY(0); }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Highlight selected cell in editor */
+.beat-cell:hover .note-area { background: rgba(200,146,42,.05); border-radius: 4px; }
+.beat-cell:hover .jianzi-area { background: rgba(200,146,42,.05); border-radius: 4px; }
+
+/* Score only printable area */
+@media print {
+  body { background: white; }
+  .menubar, .toolbar, .tabs, .editor-pane, .split-divider, .statusbar, .jianzi-palette { display: none !important; }
+  .preview-pane { padding: 0; background: white; }
+  .preview-pane { overflow: visible; }
+  .score-paper { overflow: visible; gap: 0; }
+  .score-page { box-shadow: none; border: none; overflow: visible; height: auto; min-height: 297mm; }
+}
+
+/* Fullscreen */
+.fullscreen-overlay {
+  display: none; position: fixed; inset: 0;
+  background: #e8e2d0; z-index: 2000;
+  overflow: auto; padding: 40px 60px;
+}
+.fullscreen-overlay.open { display: flex; justify-content: center; }
+.fullscreen-close {
+  position: fixed; top: 16px; right: 16px;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 6px; padding: 7px 16px; cursor: pointer;
+  font-size: 13px; z-index: 2001; font-family: var(--font-serif);
+}
+</style>
+</head>
+<body>
+
+<!-- MENUBAR -->
+<div class="menubar" id="menubar">
+  <span class="logo">🎵古琴谱<span>编辑器</span></span>
+
+  <div class="menu-item" data-menu="file">
+    <span class="menu-label">文件(F)</span>
+    <div class="dropdown">
+      <div class="dd-item" onclick="newFile()"><span>新建</span><span class="dd-shortcut">Ctrl+N</span></div>
+      <div class="dd-item" onclick="openFile()"><span>打开</span><span class="dd-shortcut">Ctrl+O</span></div>
+      <div class="dd-item" onclick="saveFile()"><span>保存</span><span class="dd-shortcut">Ctrl+S</span></div>
+      <div class="dd-item" onclick="saveFileAs()"><span>另存为</span><span class="dd-shortcut">Shift+Ctrl+S</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="openPageSettings()"><span>页面设置</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="window.print()"><span>打印 / 导出PDF</span><span class="dd-shortcut">Ctrl+P</span></div>
+    </div>
+  </div>
+
+  <div class="menu-item" data-menu="view">
+    <span class="menu-label">视图(V)</span>
+    <div class="dropdown">
+      <div class="dd-item" onclick="setView('code')"><span>仅脚本</span></div>
+      <div class="dd-item" onclick="setView('split')"><span>拆分视图</span></div>
+      <div class="dd-item" onclick="setView('preview')"><span>仅预览</span><span class="dd-shortcut">Tab</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="toggleFullscreen()"><span>全屏预览</span><span class="dd-shortcut">F11</span></div>
+    </div>
+  </div>
+
+  <div class="menu-item" data-menu="insert">
+    <span class="menu-label">插入(I)</span>
+    <div class="dropdown">
+      <div class="dd-item" onclick="togglePalette()"><span>减字谱符号库</span><span class="dd-shortcut">Ctrl+J</span></div>
+      <div class="dd-item" onclick="insertBarline()"><span>小节线 |</span></div>
+      <div class="dd-item" onclick="insertSection()"><span>段落标记 [一]</span></div>
+      <div class="dd-item" onclick="insertNewLine()"><span>换行</span></div>
+    </div>
+  </div>
+
+  <div class="menu-item" data-menu="help">
+    <span class="menu-label">帮助(H)</span>
+    <div class="dropdown">
+      <div class="dd-item" onclick="openHelp()"><span>脚本语法说明</span></div>
+      <div class="dd-item" onclick="openJianziRef()"><span>减字谱字库参考</span></div>
+      <div class="dd-item" onclick="openAbout()"><span>关于</span></div>
+    </div>
+  </div>
+
+  <div class="menubar-right">
+    <span>古琴谱编辑器 · 简谱减字谱对照版</span>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="tg">
+    <label>调：</label>
+    <select class="tb-select" id="keySelect" onchange="renderPreview()">
+      <option value="1=C">1=C</option><option value="1=D">1=D</option>
+      <option value="1=E">1=E</option><option value="1=F" selected>1=F</option>
+      <option value="1=G">1=G</option><option value="1=A">1=A</option>
+      <option value="1=bB">1=♭B</option>
+    </select>
+  </div>
+  <div class="tg">
+    <label>拍：</label>
+    <select class="tb-select" id="timeSelect" onchange="renderPreview()">
+      <option value="4/4">4/4</option><option value="3/4">3/4</option>
+      <option value="2/4">2/4</option><option value="6/8">6/8</option>
+      <option value="散板">散板</option>
+    </select>
+  </div>
+  <div class="tg">
+    <label>速度：</label>
+    <select class="tb-select" id="tempoSelect" onchange="renderPreview()">
+      <option value="♩=46" selected>♩=46</option>
+      <option value="♩=60">♩=60</option>
+      <option value="♩=72">♩=72</option>
+      <option value="♩=88">♩=88</option>
+      <option value="散">散板</option>
+    </select>
+  </div>
+  <div class="tg">
+    <button class="tb-btn" onclick="insertNoteAt('1')">1</button>
+    <button class="tb-btn" onclick="insertNoteAt('2')">2</button>
+    <button class="tb-btn" onclick="insertNoteAt('3')">3</button>
+    <button class="tb-btn" onclick="insertNoteAt('4')">4</button>
+    <button class="tb-btn" onclick="insertNoteAt('5')">5</button>
+    <button class="tb-btn" onclick="insertNoteAt('6')">6</button>
+    <button class="tb-btn" onclick="insertNoteAt('7')">7</button>
+    <button class="tb-btn" onclick="insertNoteAt('0')">0</button>
+  </div>
+  <div class="tg">
+    <button class="tb-btn" onclick="insertNoteAt('|')">|</button>
+    <button class="tb-btn" onclick="insertNoteAt('-')">—</button>
+    <button class="tb-btn" onclick="insertNoteAt('^')" title="高八度">↑</button>
+    <button class="tb-btn" onclick="insertNoteAt('_')" title="低八度">↓</button>
+    <button class="tb-btn" onclick="insertNoteAt('.')" title="附点">·</button>
+    <button class="tb-btn" onclick="insertNoteAt('(')" title="连线起">⌒</button>
+  </div>
+  <div class="tg">
+    <button class="tb-btn" onclick="insertNoteAt('v')" title="空白占位">空格</button>
+  </div>
+  <div class="tg">
+    <button class="tb-btn active" onclick="togglePalette()">🎼 减字库</button>
+    <button class="tb-btn" onclick="renderPreview()">↻ 刷新</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab" id="tab-code" onclick="setView('code')">脚本</div>
+  <div class="tab active" id="tab-split" onclick="setView('split')">拆分</div>
+  <div class="tab" id="tab-preview" onclick="setView('preview')">预览</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main" id="mainArea">
+
+  <!-- EDITOR PANE (split into two columns: notes | jianzi) -->
+  <div class="editor-pane" id="editorPane" style="flex:1;">
+    <div class="editors-split">
+
+      <!-- Notes editor -->
+      <div class="editor-col" style="flex:1.1">
+        <div class="editor-col-header">
+          <div><span>简谱</span> 脚本区</div>
+          <div style="font-size:10px;color:var(--text-dim)">每行一条小节/乐句</div>
+        </div>
+        <textarea class="code-input" id="notesEditor" spellcheck="false"
+          placeholder="T: 良宵引
+C: 1=F
+W: 据《自远堂琴谱》(1802年)
+D: 正调定弦：5612356
+
+[一]
+5. ^6 ^1 | ^1. 6 | 5. ^3. ^2 | ^1 2 ^1 | ^1 -
+ii ^1 . ^2 ^1 | 6 ^1 | ^1 6 5 | 3 3. -
+"></textarea>
+      </div>
+
+      <!-- Jianzi editor -->
+      <div class="editor-col" style="flex:1.1">
+        <div class="editor-col-header">
+          <div><span>减字谱</span> 对应区</div>
+          <div style="font-size:10px;color:var(--text-dim)">与简谱逐拍对应，用 [ ] 包裹减字</div>
+        </div>
+        <textarea class="code-input" id="jianziEditor" spellcheck="false"
+          placeholder="每行减字谱用 [减字描述] 格式，与上方简谱逐拍对应
+例：
+[名七半急勾五] [：上五一] [散勾三] [大七历四三] [大五六掩五] [撮散三｜名六，五]
+用 | 对应简谱小节线，用 - 对应延音拍
+"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="split-divider" id="splitDivider"></div>
+
+  <!-- PREVIEW PANE -->
+  <div class="preview-pane" id="previewPane" style="flex:1.2;display:flex;">
+    <div class="score-paper" id="scorePaper">
+      <div style="color:#aaa;font-size:14px;text-align:center;padding:60px 20px;font-style:italic;">
+        点击「↻ 刷新」或在编辑区输入内容，即可看到古琴谱预览
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS -->
+<div class="statusbar">
+  <span><span class="status-dot"></span><span id="statusTxt">就绪</span></span>
+  <span>📄 <span id="fileNameSt">未命名.qin</span></span>
+  <span>简谱行 <span id="notesLines">0</span> 行 | 减字行 <span id="jianziLines">0</span> 行</span>
+  <span style="margin-left:auto">古琴谱编辑器 V1.0</span>
+</div>
+
+<!-- JIANZI PALETTE -->
+<div class="jianzi-palette" id="jianziPalette">
+  <div class="palette-title">
+    <span>🎼 减字谱符号库</span>
+    <span class="palette-close" onclick="togglePalette()">✕</span>
+  </div>
+  <div id="paletteContent"></div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="helpModal">
+  <div class="modal" style="min-width:560px">
+    <h3>📖 脚本语法说明</h3>
+    <div style="font-size:12px;color:var(--text-dim);line-height:1.8;max-height:500px;overflow-y:auto;">
+      <p style="margin-bottom:8px">古琴谱编辑器使用<b style="color:var(--accent)">双栏脚本</b>：左栏输入简谱，右栏输入对应减字谱。</p>
+      <b style="color:var(--accent2)">— 简谱脚本 —</b>
+      <table class="help-table">
+        <tr><th>标记</th><th>含义</th><th>示例</th></tr>
+        <tr><td><code>T: 标题</code></td><td>乐曲标题</td><td><code>T: 良宵引</code></td></tr>
+        <tr><td><code>C: 调号</code></td><td>调号</td><td><code>C: 1=F</code></td></tr>
+        <tr><td><code>W: 作者</code></td><td>来源/作者</td><td><code>W: 据《琴谱》</code></td></tr>
+        <tr><td><code>D: 信息</code></td><td>定弦/备注</td><td><code>D: 正调定弦：5612356</code></td></tr>
+        <tr><td><code>[一] [二]</code></td><td>段落标记</td><td><code>[一]</code></td></tr>
+        <tr><td><code>1~7, 0</code></td><td>音符/休止符</td><td><code>1 2 3</code></td></tr>
+        <tr><td><code>^1</code></td><td>高八度（加上点）</td><td><code>^6 ^1</code></td></tr>
+        <tr><td><code>_5</code></td><td>低八度（加下点）</td><td><code>_5 _6</code></td></tr>
+        <tr><td><code>#4</code></td><td>升号</td><td><code>#4</code></td></tr>
+        <tr><td><code>1.</code></td><td>附点音符</td><td><code>5. 6</code></td></tr>
+        <tr><td><code>-</code></td><td>延音</td><td><code>5 - - -</code></td></tr>
+        <tr><td><code>|</code></td><td>小节线</td><td><code>1 2 3 4 |</code></td></tr>
+        <tr><td><code>||</code></td><td>终止线</td><td><code>1 - ||</code></td></tr>
+        <tr><td><code>ii</code></td><td>连音线标记</td><td>行首 <code>ii</code></td></tr>
+      </table>
+      <br>
+      <b style="color:var(--accent2)">— 减字谱脚本 —</b>
+      <table class="help-table">
+        <tr><th>格式</th><th>含义</th></tr>
+        <tr><td><code>[减字描述]</code></td><td>一个减字谱符号，对应左栏一个音符</td></tr>
+        <tr><td><code>[名七半急勾五]</code></td><td>右手弹法+弦号：名指七徽半急速勾五弦</td></tr>
+        <tr><td><code>[就打七]</code></td><td>就位打弦于七徽</td></tr>
+        <tr><td><code>[散勾三]</code></td><td>散音勾三弦</td></tr>
+        <tr><td><code>|</code></td><td>对应简谱小节线</td></tr>
+        <tr><td><code>-</code></td><td>延续，不需额外减字</td></tr>
+        <tr><td><code>[：文字]</code></td><td>旁注文字（以小字显示）</td></tr>
+      </table>
+      <br>
+      <b style="color:var(--accent2)">— 减字谱弹法字库 —</b>
+      <table class="help-table">
+        <tr><th>关键字</th><th>含义</th></tr>
+        <tr><td><code>勾</code></td><td>勾弦（名指向内）</td></tr>
+        <tr><td><code>剔</code></td><td>剔弦（名指向外）</td></tr>
+        <tr><td><code>抹</code></td><td>抹弦（食指）</td></tr>
+        <tr><td><code>挑</code></td><td>挑弦（食指向外）</td></tr>
+        <tr><td><code>打</code></td><td>打弦（中指向内）</td></tr>
+        <tr><td><code>摘</code></td><td>摘弦（中指向外）</td></tr>
+        <tr><td><code>托</code></td><td>托弦（大指向外）</td></tr>
+        <tr><td><code>擘</code></td><td>擘弦（大指向内）</td></tr>
+        <tr><td><code>散</code></td><td>散音（空弦）</td></tr>
+        <tr><td><code>泛</code></td><td>泛音</td></tr>
+        <tr><td><code>名/中/食/大</code></td><td>左手指法：名指/中指/食指/大指</td></tr>
+        <tr><td><code>一~十三</code></td><td>徽位</td></tr>
+      </table>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn primary" onclick="closeModal('helpModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="aboutModal">
+  <div class="modal" style="text-align:center">
+    <h3 style="text-align:center">🎵 古琴谱编辑器</h3>
+    <div style="font-size:30px;margin:16px 0">琴</div>
+    <p style="font-size:13px;color:var(--text-dim)">古琴谱编辑器 V1.0</p>
+    <p style="font-size:12px;color:var(--text-dim);margin-top:6px">简谱 · 减字谱对照编辑<br>支持传统古琴减字谱符号库<br>兼容番茄简谱脚本基础语法</p>
+    <div class="modal-btns" style="justify-content:center">
+      <button class="modal-btn primary" onclick="closeModal('aboutModal')">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="pageSettingsModal">
+  <div class="modal">
+    <h3>📄 页面设置</h3>
+    <label>标题字体大小</label>
+    <select id="titleSizeSelect">
+      <option value="24">24px</option><option value="28" selected>28px</option><option value="32">32px</option>
+    </select>
+    <label>简谱音符大小</label>
+    <select id="noteSizeSelect">
+      <option value="16">小</option><option value="20" selected>中</option><option value="24">大</option>
+    </select>
+    <label>减字谱大小</label>
+    <select id="jianziSizeSelect">
+      <option value="10">小</option><option value="13" selected>中</option><option value="16">大</option>
+    </select>
+    <div class="modal-btns">
+      <button class="modal-btn secondary" onclick="closeModal('pageSettingsModal')">取消</button>
+      <button class="modal-btn primary" onclick="applyPageSettings()">应用</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULLSCREEN -->
+<div class="fullscreen-overlay" id="fullscreenOverlay">
+  <button class="fullscreen-close" onclick="closeFullscreen()">✕ 退出全屏</button>
+  <div id="fullscreenContent"></div>
+</div>
+
+<!-- NOTIF -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+let currentView = 'split';
+let currentFile = '未命名.qin';
+let lastSectionNum = 0;
+
+// Page settings
+let settings = { titleSize: 28, noteSize: 20, jianziSize: 13 };
+
+// ============================================================
+//  JIANZI DATABASE
+//  Maps parsed tokens to display structure
+// ============================================================
+const JIANZI_DB = {
+  // Right hand techniques (弹法)
+  rightHand: {
+    '勾': { char: '勾', desc: '名指向内拨弦' },
+    '剔': { char: '剔', desc: '名指向外拨弦' },
+    '抹': { char: '抹', desc: '食指向内拨弦' },
+    '挑': { char: '挑', desc: '食指向外拨弦' },
+    '打': { char: '打', desc: '中指向内拨弦' },
+    '摘': { char: '摘', desc: '中指向外拨弦' },
+    '托': { char: '托', desc: '大指向外拨弦' },
+    '擘': { char: '擘', desc: '大指向内拨弦' },
+    '轮': { char: '轮', desc: '轮指' },
+    '滚': { char: '滚', desc: '滚拂' },
+    '拂': { char: '拂', desc: '拂弦' },
+    '撮': { char: '撮', desc: '两弦同拨' },
+    '历': { char: '历', desc: '历音' },
+    '就打': { char: '就打', desc: '就位打弦' },
+    '散': { char: '散', desc: '散音（空弦）' },
+    '泛': { char: '泛', desc: '泛音' },
+    '按': { char: '按', desc: '按音' },
+  },
+  // Left hand fingers
+  leftFinger: { '名': '名', '中': '中', '食': '食', '大': '大', '无': '无' },
+  // Hui positions
+  hui: ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三'],
+  // String numbers
+  strings: ['一','二','三','四','五','六','七'],
+  // Modifiers
+  modifiers: {
+    '半': '½', '急': '急', '缓': '缓', '散': '散',
+    '泛': '泛', '上': '上', '下': '下', '进': '进', '退': '退',
+  }
+};
+
+// Parse a jianzi token like "名七半急勾五" into a display object
+function parseJianziToken(raw) {
+  if (!raw || raw === '-') return null;
+  if (raw.startsWith('注：') || raw.startsWith('注:')) {
+    return { type: 'annotation', text: raw.substring(2) };
+  }
+
+  const result = {
+    type: 'jianzi',
+    raw,
+    leftFinger: '',   // 名/中/食/大
+    huiPos: '',       // 徽位
+    huiMod: '',       // 半/急/缓
+    technique: '',    // 勾/剔/抹...
+    stringNum: '',    // 弦号
+    prefix: '',       // 散/泛
+    extra: '',
+  };
+
+  let s = raw;
+
+  // Check for 散/泛 prefix (散音/泛音)
+  if (s.startsWith('散') && s.length > 1 && !s.startsWith('散音')) {
+    result.prefix = '散';
+    s = s.substring(1);
+  } else if (s.startsWith('泛')) {
+    result.prefix = '泛';
+    s = s.substring(1);
+  }
+
+  // Left finger
+  for (const f of ['名','中','食','大']) {
+    if (s.startsWith(f)) { result.leftFinger = f; s = s.substring(1); break; }
+  }
+
+  // Hui position (one or two chars)
+  const huiNames = ['十三','十二','十一','十','九','八','七','六','五','四','三','二','一'];
+  for (const h of huiNames) {
+    if (s.startsWith(h)) { result.huiPos = h; s = s.substring(h.length); break; }
+  }
+
+  // Hui modifiers
+  for (const m of ['半','急','缓','上','下','进','退']) {
+    if (s.startsWith(m)) { result.huiMod += m; s = s.substring(1); }
+  }
+
+  // Right hand technique
+  const techniques = ['就打','擘','托','摘','打','挑','抹','剔','勾','轮','滚','拂','撮','历'];
+  for (const t of techniques) {
+    if (s.startsWith(t)) { result.technique = t; s = s.substring(t.length); break; }
+  }
+
+  // String number
+  const strNames = ['七','六','五','四','三','二','一'];
+  for (const st of strNames) {
+    if (s.startsWith(st)) { result.stringNum = st; s = s.substring(st.length); break; }
+  }
+
+  result.extra = s;
+  return result;
+}
+
+// Render a parsed jianzi into HTML for display on the score
+function renderJianziHTML(jz) {
+  if (!jz) return '<div class="jianzi-empty"></div>';
+
+  if (jz.type === 'annotation') {
+    return `<div class="jianzi-technique" style="font-size:9px;color:#7a5a30;writing-mode:vertical-rl;">${esc(jz.text)}</div>`;
+  }
+
+  // 👉 直接用原始字符串渲染（关键）
+  return `
+    <div class="jianzi-render">
+      <div class="jianzi-font">${esc(jz.raw)}</div>
+    </div>
+  `;
+}
+
+// ============================================================
+//  PARSER
+// ============================================================
+function parseNotes(text) {
+  // Returns array of lines, each line is array of tokens
+  const lines = [];
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) { lines.push({ type: 'blank' }); continue; }
+    if (line.startsWith('T:')) { lines.push({ type: 'title', val: line.substring(2).trim() }); continue; }
+    if (line.startsWith('C:')) { lines.push({ type: 'key', val: line.substring(2).trim() }); continue; }
+    if (line.startsWith('W:')) { lines.push({ type: 'composer', val: line.substring(2).trim() }); continue; }
+    if (line.startsWith('D:')) { lines.push({ type: 'desc', val: line.substring(2).trim() }); continue; }
+    if (line.startsWith('[') && /^\[[一二三四五六七八九十]+\]/.test(line)) {
+      lines.push({ type: 'section', val: line }); continue;
+    }
+
+    // Regular music line
+    const tokens = tokenizeNoteLine(line);
+    lines.push({ type: 'music', tokens, hasTie: line.startsWith('ii') });
+  }
+  return lines;
+}
+
+function tokenizeNoteLine(line) {
+  const tokens = [];
+  // Strip leading tie marker
+  let s = line.replace(/^ii\s*/, '');
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (ch === ' ') { i++; continue; }
+    if (ch === '|' && s[i+1] === '|') { tokens.push({ type: 'dbar' }); i+=2; continue; }
+    if (ch === '|') { tokens.push({ type: 'bar' }); i++; continue; }
+    // dash / prolongation: support '-', '—', '–'
+    if (ch === '-' || ch === '—' || ch === '–') { tokens.push({ type: 'dash' }); i++; continue; }
+
+    // dotted marker can be separated by spaces: "1 .", "1 ·", "1 .." etc
+    if (ch === '.' || ch === '·') {
+      const last = tokens[tokens.length - 1];
+      if (last && last.type === 'note') {
+        if (!last.dot) last.dot = true;
+        else if (!last.dot2) last.dot2 = true;
+      }
+      i++;
+      continue;
+    }
+
+    // Parse note
+    let oct_up = 0, oct_dn = 0, sharp = false, flat = false;
+    let j = i;
+
+    // Parse prefix markers with optional spaces: "^ 1", "_ 6", "# 4", "b 3", "♭3", "♯4"
+    while (j < s.length) {
+      const c = s[j];
+      if (c === ' ') { j++; continue; }
+      if (c === '^') { oct_up++; j++; continue; }
+      if (c === '_') { oct_dn++; j++; continue; }
+      if (c === '#' || c === '♯') { sharp = true; j++; continue; }
+      if (c === 'b' || c === '♭') {
+        // Only treat as flat if a digit follows (possibly with spaces)
+        let k = j + 1;
+        while (k < s.length && s[k] === ' ') k++;
+        if (k < s.length && /[0-9]/.test(s[k])) { flat = true; j = k; continue; }
+        break;
+      }
+      break;
+    }
+
+    // --- 插入开始：支持空白占位符 v ---
+if (j < s.length && (s[j].toLowerCase() === 'v')) {
+  tokens.push({ type: 'note', num: 'v', isPlaceholder: true, oct_up: 0, oct_dn: 0 });
+  i = j + 1;
+  continue;
+}
+// --- 插入结束 ---
+
+    if (j < s.length && /[0-9]/.test(s[j])) {
+      const num = s[j]; j++;
+      let dot = false, dot2 = false;
+      const isDotChar = (x) => x === '.' || x === '·';
+      // immediate dotted marks: "1." / "1.." (without spaces)
+      if (j < s.length && isDotChar(s[j])) { dot = true; j++; }
+      if (j < s.length && isDotChar(s[j])) { dot2 = true; j++; }
+      tokens.push({ type: 'note', num, oct_up, oct_dn, sharp, flat, dot, dot2 });
+      i = j;
+    } else {
+      i++;
+    }
+  }
+  return tokens;
+}
+
+function parseJianziLine(text) {
+  // Parse "[减字] [减字] | -" etc
+  const tokens = [];
+  const s = text.trim();
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (ch === ' ') { i++; continue; }
+    if (ch === '[') {
+      const end = s.indexOf(']', i);
+      if (end === -1) { i++; continue; }
+      const content = s.substring(i+1, end);
+      tokens.push({ type: 'jz', raw: content, parsed: parseJianziToken(content) });
+      i = end + 1;
+    } else if (ch === '|') {
+      tokens.push({ type: 'bar' });
+      i++;
+    } else if (ch === '-') {
+      tokens.push({ type: 'dash' });
+      i++;
+    } else {
+      i++;
+    }
+  }
+  return tokens;
+}
+
+// ============================================================
+//  RENDERER
+// ============================================================
+function renderPreview() {
+  const notesText = document.getElementById('notesEditor').value;
+  const jianziText = document.getElementById('jianziEditor').value;
+  const paper = document.getElementById('scorePaper');
+
+  if (!notesText.trim() && !jianziText.trim()) {
+    paper.innerHTML = '<div style="color:#aaa;font-size:14px;text-align:center;padding:60px 20px;font-style:italic;">请在脚本区输入内容</div>';
+    return;
+  }
+
+  const noteLines = parseNotes(notesText);
+  const jianziRawLines = jianziText.split('\n').filter(l => l.trim() !== '');
+
+  // Metadata
+  let title = '未命名';
+  let keyStr = document.getElementById('keySelect').value;
+  let timeStr = document.getElementById('timeSelect').value;
+  let tempoStr = document.getElementById('tempoSelect').value;
+  let composer = '';
+  let desc = '';
+
+  for (const l of noteLines) {
+    if (l.type === 'title') title = l.val;
+    if (l.type === 'key') keyStr = l.val;
+    if (l.type === 'composer') composer = l.val;
+    if (l.type === 'desc') desc = l.val;
+  }
+
+  let html = '';
+
+  // Title
+  html += `<div class="score-title" style="font-size:${settings.titleSize}px">${esc(title)}</div>`;
+
+  // Meta
+  html += `<div class="score-meta-row">
+    <div class="score-meta-left">
+      <span style="font-size:14px;font-weight:600;">${esc(keyStr)}</span>
+      ${desc ? `<span style="font-size:12px">${esc(desc)}</span>` : ''}
+      <span style="font-size:12px">[一]♩=${tempoStr.replace('♩=','')}</span>
+    </div>
+    <div class="score-meta-right">
+      ${composer ? esc(composer) : ''}
+    </div>
+  </div>`;
+
+  html += '<hr class="score-divider">';
+
+  // Music lines paired with jianzi lines
+  let jianziLineIdx = 0;
+  let musicLineIdx = 0;
+
+  for (const noteLine of noteLines) {
+    if (noteLine.type === 'blank' || noteLine.type === 'title' || noteLine.type === 'key' || noteLine.type === 'composer' || noteLine.type === 'desc') continue;
+
+    if (noteLine.type === 'section') {
+      // Section marker like [一]
+      const m = noteLine.val.match(/\[([一二三四五六七八九十]+)\]/);
+      if (m) {
+        html += `<div class="section-marker">[${m[1]}]</div>`;
+      }
+      continue;
+    }
+
+    if (noteLine.type === 'music') {
+      const noteTokens = noteLine.tokens;
+      const jzLine = jianziRawLines[jianziLineIdx] || '';
+      const jzTokens = jzLine ? parseJianziLine(jzLine) : [];
+      jianziLineIdx++;
+
+      html += renderMusicLine(noteTokens, jzTokens, noteLine.hasTie);
+      musicLineIdx++;
+    }
+  }
+
+  // Pagination (A4): split top-level blocks into multiple fixed-height pages.
+  // Only adjust the internals of #scorePaper (keep page layout unchanged).
+  paper.innerHTML = '';
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  const blocks = Array.from(temp.childNodes).filter(n => n.nodeType === 1);
+
+  const makePage = () => {
+    const p = document.createElement('div');
+    p.className = 'score-page';
+    return p;
+  };
+
+  let page = makePage();
+  paper.appendChild(page);
+
+  // Append block by block; if overflow, start a new page.
+  // Use a small tolerance to avoid rounding issues.
+  const tolerance = 1;
+  for (const block of blocks) {
+    page.appendChild(block);
+    if (page.scrollHeight > page.clientHeight + tolerance) {
+      page.removeChild(block);
+      page = makePage();
+      paper.appendChild(page);
+      page.appendChild(block);
+    }
+  }
+  updateStatus();
+  setStatus('预览已更新');
+}
+
+function renderMusicLine(noteTokens, jzTokens, hasTie) {
+  // Align note tokens and jianzi tokens
+  // Both should have matching bar | and note positions
+
+  let html = '<div class="score-line">';
+
+  // Build alignment: pair notes with jz tokens by type (bar matches bar, note/dash matches jz)
+  let ni = 0; // note token index
+  let ji = 0; // jianzi token index
+
+  // Count real notes and dashes in notes
+  const noteItems = noteTokens; // we iterate together
+
+  while (ni < noteItems.length || ji < jzTokens.length) {
+    const nt = noteItems[ni];
+    const jt = jzTokens[ji];
+
+    if (!nt && !jt) break;
+
+    // Barline alignment
+    if (nt && (nt.type === 'bar' || nt.type === 'dbar')) {
+      html += renderBarCell(nt.type === 'dbar');
+      ni++;
+      // skip corresponding jz bar
+      if (jt && jt.type === 'bar') ji++;
+      continue;
+    }
+    if (!nt && jt && jt.type === 'bar') {
+      html += renderBarCell(false);
+      ji++;
+      continue;
+    }
+
+    // Note / dash
+    const noteHtml = nt ? renderNoteCell(nt) : '';
+    let jzHtml = '';
+    if (jt && jt.type !== 'bar') {
+      if (jt.type === 'jz') {
+        jzHtml = renderJianziHTML(jt.parsed);
+      } else if (jt.type === 'dash') {
+        jzHtml = '<div class="jianzi-empty"></div>';
+      }
+      ji++;
+    }
+
+    html += `<div class="beat-cell">
+      <div class="note-area">${noteHtml}</div>
+      <div class="jianzi-area">${jzHtml || '<div class="jianzi-empty"></div>'}</div>
+    </div>`;
+
+    if (nt) ni++;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function renderBarCell(isDouble) {
+  return `<div class="bar-line-cell">
+    <div class="${isDouble ? 'bar-line-double' : ''}">
+      <div class="bar-line-inner"></div>
+      ${isDouble ? '<div class="bar-line-inner"></div>' : ''}
+    </div>
+  </div>`;
+}
+
+
+
+function renderNoteCell(tok) {
+  if (tok.type === 'dash') {
+    return `<div style="font-size:16px;color:#888;line-height:1;padding-bottom:2px;">—</div>`;
+  }
+
+  // --- 插入开始：处理占位符渲染 ---
+  if (tok.num === 'v') {
+    return `<div class="note-glyph" style="font-size:${settings.noteSize}px; visibility:hidden;">&nbsp;</div>`;
+  }
+  // --- 插入结束 ---
+
+  const noteMap = {'0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7'};
+  const n = noteMap[tok.num] || tok.num;
+
+  let dotsTop = '';
+  for (let i=0;i<tok.oct_up;i++) dotsTop += '·';
+  let dotsBot = '';
+  for (let i=0;i<tok.oct_dn;i++) dotsBot += '·';
+
+  const acc = tok.sharp ? '<span class="note-acc">#</span>' : tok.flat ? '<span class="note-acc">b</span>' : '';
+  const isRest = tok.num === '0';
+  const dottedCls = tok.dot ? (tok.dot2 ? ' note-dotted2' : ' note-dotted') : '';
+
+  return `
+    <div class="note-octave-dots-top" style="font-size:${settings.noteSize*1.1}px">${dotsTop}</div>
+    <div class="note-glyph${isRest?' rest':''}${dottedCls}" style="font-size:${settings.noteSize}px">${acc}${n}</div>
+    <div class="note-octave-dots-bottom" style="font-size:${settings.noteSize*1.1}px">${dotsBot}</div>
+  `;
+}
+
+// ============================================================
+//  JIANZI PALETTE
+// ============================================================
+const PALETTE_DATA = [
+  {
+    title: '右手弹法/散音',
+    items: [
+      { label: '抹（食指内）', code: '[散抹五]', short: '抹' },
+      { label: '挑（食指外）', code: '[散挑五]', short: '挑' },     
+      { label: '勾（中指内）', code: '[散勾五]', short: '勾' },
+      { label: '剔（中指外）', code: '[散剔五]', short: '剔' },
+      { label: '打（名指内）', code: '[散打五]', short: '打' },
+      { label: '摘（名指外）', code: '[散摘五]', short: '摘' },
+      { label: '托（大指外）', code: '[散托五]', short: '托' },
+      { label: '劈（大指内）', code: '[散劈五]', short: '擘/劈' },
+      { label: '历音', code: '[散历六五]', short: '历' },
+      { label: '抹挑', code: '[散抹挑五]', short: '抹挑' },
+      { label: '勾剔', code: '[散勾剔五]', short: '勾剔' },
+      { label: '打摘', code: '[散打摘五]', short: '打摘' },
+      { label: '撮（两弦）', code: '[撮中八，七｜散五]', short: '撮' },
+      { label: '大撮', code: '[大撮中八，七｜散二]', short: '大撮' },
+      { label: '反撮', code: '[反撮中八，七｜散二]', short: '反撮' },
+      { label: '拨', code: '[拨中七，七｜散六]', short: '拨' },
+      { label: '剌', code: '[剌中七，七｜散六]', short: '剌' },
+      { label: '拨剌', code: '[拨剌中七，七｜散六]', short: '拨剌' },
+      { label: '双弹', code: '[双弹中七，七｜散六]', short: '双弹' },
+      { label: '三弹', code: '[三弹中七，七｜散六]', short: '三弹' },
+      { label: '轮指', code: '[大八五半轮七]', short: '轮' },
+      { label: '半轮', code: '[:半轮]', short: '半轮' },
+      { label: '打圆', code: '[:打圆]', short: '打圆' },
+      { label: '滚', code: '[:滚]', short: '滚' },
+      { label: '滚', code: '[:滚]', short: '滚' },
+      { label: '沸', code: '[:沸]', short: '沸' },
+      { label: '背璅', code: '[:背璅]', short: '背璅' },
+      { label: '短璅', code: '[:短璅]', short: '短璅' },
+      { label: '长璅', code: '[:长璅]', short: '长璅' },
+      { label: '叠蠲', code: '[:叠蠲]', short: '叠蠲' },
+      { label: '圆搂', code: '[:圆搂]', short: '圆搂' },
+      { label: '长璅', code: '[:长璅]', short: '长璅' },
+      { label: '散音', code: '[散勾五]', short: '散' },
+      { label: '就', code: '[就勾五]', short: '就' },
+    ]
+  },
+  {
+    title: '左手技法',
+    items: [
+      { label: '吟', code: '[：吟]', short: '吟' },
+      { label: '猱', code: '[：猱]', short: '猱' },
+      { label: '绰', code: '[名九绰勾三]', short: '绰' },
+      { label: '注', code: '[名九注勾三]', short: '注' },
+      { label: '撞', code: '[：撞]', short: '撞' },
+      { label: '急', code: '[名九急勾三]', short: '急' },
+      { label: '掩', code: '[名九掩六]', short: '掩' },
+      { label: '掐起', code: '[名八掐起]', short: '掐起' },
+      { label: '带起', code: '[：带起]', short: '带起' },
+      { label: '对起', code: '[：对起]', short: '对起' },
+      { label: '抓起', code: '[：抓起]', short: '抓起' },
+      { label: '撇起', code: '[：撇起]', short: '撇起' },
+      { label: '泛音', code: '[泛音名九挑六]', short: '泛音' },
+      { label: '长吟', code: '[：长吟]', short: '长吟' },
+      { label: '细吟', code: '[：细吟]', short: '细吟' },
+      { label: '定吟', code: '[：定吟]', short: '定吟' },
+      { label: '小吟', code: '[：小吟]', short: '小吟' },
+      { label: '分开', code: '[：分开]', short: '分开' },
+      { label: '应合', code: '[：应合]', short: '应合' },
+    ]
+  },
+  {
+    title: '按音（常用组合）',
+    items: [
+      { label: '名七勾五', code: '[名七勾五]', short: '名七勾五' },
+      { label: '名七半勾五', code: '[名七半勾五]', short: '名七半勾五' },
+      { label: '名十一勾五', code: '[名十一勾五]', short: '名十一勾五' },
+      { label: '名十一徽勾五', code: '[名十一徽勾五]', short: '名十一徽勾五' },
+      { label: '中七勾四', code: '[中七勾四]', short: '中七勾四' },
+      { label: '大九勾三', code: '[大九勾三]', short: '大九勾三' },
+      { label: '食九勾三', code: '[食九勾三]', short: '食九勾三' },
+      { label: '跪指', code: '[跪五四勾三]', short: '跪指' },
+    ]
+  },
+  {
+    title: '术语/注释',
+    items: [
+      { label: '上滑', code: '[：上五六]', short: '上' },
+      { label: '下滑', code: '[：下五六]', short: '下' },
+      { label: '进复', code: '[：进]', short: '进' },
+      { label: '退复', code: '[：退]', short: '退' },
+      { label: '復', code: '[：復]', short: '復' },
+      { label: '泛起', code: '[：泛起]', short: '泛起' },
+      { label: '泛止', code: '[：泛止]', short: '泛止' },
+      { label: '大息', code: '[：大息]', short: '大息' },
+      { label: '少息', code: '[：少息]', short: '少息' },
+
+    ]
+  }
+];
+
+function buildPalette() {
+  const container = document.getElementById('paletteContent');
+  let html = '';
+  for (const section of PALETTE_DATA) {
+    html += `<div class="palette-section">
+      <div class="palette-section-title">${esc(section.title)}</div>
+      <div class="palette-grid">`;
+    for (const item of section.items) {
+      html += `<div class="palette-item" onclick="insertJianziCode('${item.code.replace(/'/g,"\\'")}')">
+        ${esc(item.short)}
+        <span class="pi-label">${esc(item.label)}</span>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function togglePalette() {
+  const p = document.getElementById('jianziPalette');
+  p.classList.toggle('open');
+  if (p.classList.contains('open') && !document.getElementById('paletteContent').children.length) {
+    buildPalette();
+  }
+}
+
+function insertJianziCode(code) {
+  insertAtCursor(document.getElementById('jianziEditor'), code + ' ');
+  renderPreview();
+}
+
+// ============================================================
+//  EDITOR UTILS
+// ============================================================
+function insertAtCursor(el, text) {
+  const s = el.selectionStart, e = el.selectionEnd;
+  el.value = el.value.substring(0, s) + text + el.value.substring(e);
+  el.selectionStart = el.selectionEnd = s + text.length;
+  el.focus();
+}
+
+function insertNoteAt(ch) {
+  insertAtCursor(document.getElementById('notesEditor'), ch + ' ');
+  if (currentView !== 'code') renderPreview();
+}
+
+function insertBarline() { insertNoteAt('|'); }
+function insertNewLine() { insertAtCursor(document.getElementById('notesEditor'), '\n'); }
+function insertSection() {
+  const secs = ['一','二','三','四','五','六','七','八','九','十'];
+  lastSectionNum = (lastSectionNum + 1) % secs.length;
+  insertAtCursor(document.getElementById('notesEditor'), `\n[${secs[lastSectionNum]}]\n`);
+}
+
+// ============================================================
+//  VIEW
+// ============================================================
+function setView(view) {
+  currentView = view;
+  const ep = document.getElementById('editorPane');
+  const pp = document.getElementById('previewPane');
+  const sd = document.getElementById('splitDivider');
+
+  ['tab-code','tab-split','tab-preview'].forEach(id => document.getElementById(id).classList.remove('active'));
+
+  if (view === 'code') {
+    ep.style.display = 'flex'; pp.style.display = 'none'; sd.style.display = 'none';
+    document.getElementById('tab-code').classList.add('active');
+  } else if (view === 'preview') {
+    ep.style.display = 'none'; pp.style.display = 'flex'; sd.style.display = 'none';
+    document.getElementById('tab-preview').classList.add('active');
+    renderPreview();
+  } else {
+    ep.style.display = 'flex'; pp.style.display = 'flex'; sd.style.display = 'block';
+    ep.style.flex = '1'; pp.style.flex = '1.2';
+    document.getElementById('tab-split').classList.add('active');
+    renderPreview();
+  }
+}
+
+// ============================================================
+//  FILE OPS
+// ============================================================
+function newFile() {
+  if (document.getElementById('notesEditor').value.trim() && !confirm('创建新文件将丢失当前内容，继续？')) return;
+  document.getElementById('notesEditor').value = 'T: 未命名\nC: 1=F\nW: \n\n[一]\n';
+  document.getElementById('jianziEditor').value = '';
+  currentFile = '未命名.qin';
+  document.getElementById('fileNameSt').textContent = currentFile;
+  renderPreview();
+}
+
+function openFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.qin,.txt,.jps';
+  input.onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        document.getElementById('notesEditor').value = data.notes || '';
+        document.getElementById('jianziEditor').value = data.jianzi || '';
+      } catch {
+        document.getElementById('notesEditor').value = ev.target.result;
+        document.getElementById('jianziEditor').value = '';
+      }
+      currentFile = f.name;
+      document.getElementById('fileNameSt').textContent = currentFile;
+      renderPreview();
+    };
+    r.readAsText(f);
+  };
+  input.click();
+}
+
+function saveFile() {
+  const data = {
+    notes: document.getElementById('notesEditor').value,
+    jianzi: document.getElementById('jianziEditor').value,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = currentFile;
+  a.click(); URL.revokeObjectURL(url);
+  setStatus('文件已保存：' + currentFile);
+}
+
+function saveFileAs() {
+  const name = prompt('请输入文件名', currentFile);
+  if (!name) return;
+  currentFile = name.endsWith('.qin') ? name : name + '.qin';
+  document.getElementById('fileNameSt').textContent = currentFile;
+  saveFile();
+}
+
+// ============================================================
+//  PAGE SETTINGS
+// ============================================================
+function openPageSettings() { openModal('pageSettingsModal'); }
+function applyPageSettings() {
+  settings.titleSize = parseInt(document.getElementById('titleSizeSelect').value);
+  settings.noteSize = parseInt(document.getElementById('noteSizeSelect').value);
+  settings.jianziSize = parseInt(document.getElementById('jianziSizeSelect').value);
+  closeModal('pageSettingsModal');
+  renderPreview();
+}
+
+// ============================================================
+//  FULLSCREEN
+// ============================================================
+function toggleFullscreen() {
+  renderPreview();
+  const overlay = document.getElementById('fullscreenOverlay');
+  document.getElementById('fullscreenContent').innerHTML = document.getElementById('scorePaper').outerHTML;
+  overlay.classList.add('open');
+}
+function closeFullscreen() {
+  document.getElementById('fullscreenOverlay').classList.remove('open');
+}
+
+// ============================================================
+//  MODALS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openHelp() { openModal('helpModal'); }
+function openJianziRef() { openModal('helpModal'); }
+function openAbout() { openModal('aboutModal'); }
+
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('open'); });
+});
+
+// ============================================================
+//  MENU
+// ============================================================
+document.querySelectorAll('.menu-item').forEach(item => {
+  item.querySelector('.menu-label').addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('open'));
+});
+
+// ============================================================
+//  SPLIT DIVIDER DRAG
+// ============================================================
+(function() {
+  const div = document.getElementById('splitDivider');
+  let drag = false, startX = 0, startW = 0;
+  div.addEventListener('mousedown', e => {
+    drag = true; startX = e.clientX;
+    startW = document.getElementById('editorPane').getBoundingClientRect().width;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const main = document.getElementById('mainArea');
+    const total = main.getBoundingClientRect().width - 4;
+    const newW = Math.max(280, Math.min(total - 280, startW + e.clientX - startX));
+    document.getElementById('editorPane').style.flex = 'none';
+    document.getElementById('editorPane').style.width = newW + 'px';
+    document.getElementById('previewPane').style.flex = 'none';
+    document.getElementById('previewPane').style.width = (total - newW) + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    drag = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+// ============================================================
+//  STATUS / NOTIFY
+// ============================================================
+function setStatus(msg) { document.getElementById('statusTxt').textContent = msg; }
+function updateStatus() {
+  const nl = document.getElementById('notesEditor').value.split('\n').length;
+  const jl = document.getElementById('jianziEditor').value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('notesLines').textContent = nl;
+  document.getElementById('jianziLines').textContent = jl;
+}
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ============================================================
+//  KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 's' && !e.shiftKey) { e.preventDefault(); saveFile(); }
+  if (e.ctrlKey && e.shiftKey && e.key === 'S') { e.preventDefault(); saveFileAs(); }
+  if (e.ctrlKey && e.key === 'n') { e.preventDefault(); newFile(); }
+  if (e.ctrlKey && e.key === 'o') { e.preventDefault(); openFile(); }
+  if (e.ctrlKey && e.key === 'j') { e.preventDefault(); togglePalette(); }
+  if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); }
+  if (e.key === 'Tab' && document.activeElement.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    setView(currentView === 'preview' ? 'split' : 'preview');
+  }
+});
+
+// Auto-refresh on input
+['notesEditor','jianziEditor'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (currentView !== 'code') {
+      clearTimeout(window._rt);
+      window._rt = setTimeout(renderPreview, 500);
+    }
+    updateStatus();
+  });
+});
+
+// ============================================================
+//  UTIL
+// ============================================================
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Load example
+  document.getElementById('notesEditor').value =
+`T: 良宵引
+C: 1=F
+W: 龚一打谱
+D: 正调定弦：5612356
+
+[一]
+5. ^6 _1 | ^1. 6 | 5. ^3 ^2 | ^1 2 ^1 | ^1 - |  
+^1 ^2 ^1 | 6 ^1 | ^1 6 5 | 3 _3 - |  `;
+
+  document.getElementById('jianziEditor').value =
+`[：泛起+中七勾一] [名七勾二] [三+：泛止] | [大六二托七+：长吟] [：抓起]  | [：泛起+名七挑六] [历五四] | [勾三] [四] [三+：泛止]  | [大六二托七] 
+[:背璅七] [：进五七] [:復] | [大七抹七+：吟][：上六二] | [就挑七] [：下七] [名七七掐起] | [名七九挑六] [散挑五]  `;
+
+  setView('split');
+  setTimeout(renderPreview, 100);
+  buildPalette();
+});
+</script>
+</body>
+</html>
