@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一个人，就是一支军队</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --accent: #e8320a;
+    --gold: #c9a84c;
+    --muted: #6b6356;
+    --light-line: #d9d0c0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* MASTHEAD */
+  .masthead {
+    border-bottom: 3px solid var(--ink);
+    padding: 18px 48px 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .masthead-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .masthead-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .masthead-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  /* HERO */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    min-height: 92vh;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .hero-text {
+    padding: 64px 56px 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 2px solid var(--ink);
+    position: relative;
+  }
+
+  .overline {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 32px;
+    display: block;
+  }
+
+  .hero-headline {
+    font-family: 'Noto Serif SC', serif;
+    font-weight: 900;
+    font-size: clamp(52px, 7vw, 96px);
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .hero-headline .accent-word {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .hero-subhead {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin-top: 36px;
+    max-width: 520px;
+    font-weight: 400;
+  }
+
+  .hero-bottom {
+    margin-top: auto;
+    padding-top: 40px;
+  }
+
+  .byline {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-top: 1px solid var(--light-line);
+    padding-top: 16px;
+  }
+
+  /* RIGHT PANEL */
+  .hero-panel {
+    background: var(--ink);
+    padding: 56px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-panel::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.12;
+  }
+
+  .pull-stat {
+    text-align: center;
+    padding: 48px 0;
+  }
+
+  .stat-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 88px;
+    font-weight: 700;
+    color: var(--paper);
+    line-height: 1;
+    display: block;
+  }
+
+  .stat-label {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    color: rgba(245,240,232,0.55);
+    letter-spacing: 0.15em;
+    margin-top: 12px;
+    display: block;
+    font-weight: 300;
+  }
+
+  .divider-panel {
+    height: 1px;
+    background: rgba(245,240,232,0.2);
+  }
+
+  .side-quote {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--paper);
+    line-height: 1.5;
+    padding: 32px 0;
+  }
+
+  .side-quote span {
+    color: var(--accent);
+  }
+
+  .panel-note {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: rgba(245,240,232,0.35);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  /* ARTICLE BODY */
+  .article-wrap {
+    display: grid;
+    grid-template-columns: 200px 1fr 240px;
+    gap: 0;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .sidebar-left {
+    border-right: 2px solid var(--ink);
+    padding: 56px 28px;
+  }
+
+  .sidebar-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  .toc-item {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    line-height: 2;
+    color: var(--muted);
+    font-weight: 400;
+    display: block;
+    border-bottom: 1px solid var(--light-line);
+    padding: 8px 0;
+  }
+
+  .toc-num {
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    font-size: 10px;
+    margin-right: 6px;
+  }
+
+  /* MAIN CONTENT */
+  .main-content {
+    padding: 56px 60px;
+    border-right: 2px solid var(--ink);
+  }
+
+  .drop-cap-para {
+    margin-bottom: 32px;
+    line-height: 1.9;
+    font-size: 16px;
+  }
+
+  .drop-cap-para::first-letter {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 72px;
+    font-weight: 900;
+    float: left;
+    line-height: 0.8;
+    margin: 8px 10px -4px 0;
+    color: var(--accent);
+  }
+
+  .body-para {
+    margin-bottom: 24px;
+    line-height: 1.9;
+    font-size: 16px;
+    color: #1a1a1a;
+  }
+
+  .section-head {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin: 56px 0 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .section-head .num {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 400;
+  }
+
+  .pull-quote {
+    border-left: 4px solid var(--accent);
+    padding: 20px 28px;
+    margin: 40px 0;
+    background: rgba(232,50,10,0.04);
+  }
+
+  .pull-quote p {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  .highlight {
+    background: linear-gradient(transparent 60%, rgba(201,168,76,0.35) 60%);
+  }
+
+  .em-text {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .callout-box {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 32px 36px;
+    margin: 48px 0;
+  }
+
+  .callout-box h4 {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .callout-box ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .callout-box ul li {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    font-weight: 300;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(245,240,232,0.15);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .callout-box ul li:last-child { border-bottom: none; }
+
+  .li-bullet {
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  /* SIDEBAR RIGHT */
+  .sidebar-right {
+    padding: 56px 28px;
+  }
+
+  .sidebar-card {
+    border: 2px solid var(--ink);
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .sidebar-card h5 {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+
+  .sidebar-card p {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .sidebar-card.dark {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+  .sidebar-card.dark p {
+    color: rgba(245,240,232,0.7);
+  }
+  .sidebar-card.dark h5 {
+    color: var(--gold);
+  }
+  .sidebar-card.dark .big-stat {
+    font-family: 'Space Mono', monospace;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--paper);
+    display: block;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  /* FOOTER */
+  .article-footer {
+    padding: 48px;
+    border-top: 3px solid var(--ink);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .footer-manifesto {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+
+  .footer-manifesto .line-accent {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .footer-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--light-line);
+  }
+
+  .step-item:last-child { border-bottom: none; }
+
+  .step-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--light-line);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 40px;
+  }
+
+  .step-text strong {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .step-text p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .bottom-bar {
+    background: var(--ink);
+    padding: 20px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .bottom-bar span {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: rgba(245,240,232,0.4);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .bottom-bar .bottom-tag {
+    color: var(--accent);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-panel { display: none; }
+    .article-wrap { grid-template-columns: 1fr; }
+    .sidebar-left, .sidebar-right { display: none; }
+    .main-content { padding: 36px 28px; }
+    .hero-text { padding: 40px 28px; }
+    .masthead { padding: 16px 28px; }
+    .article-footer { grid-template-columns: 1fr; padding: 32px 28px; }
+    .bottom-bar { padding: 16px 28px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <span class="masthead-tag">独立创业</span>
+  <span class="masthead-title">SOLOPRENEUR DISPATCH</span>
+  <span class="masthead-date">2026 · 一人公司时代</span>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-text">
+    <div>
+      <span class="overline">封面故事 · COVER STORY</span>
+      <h1 class="hero-headline">
+        一个人，<br>
+        就是<span class="accent-word">一支</span><br>
+        军队
+      </h1>
+      <p class="hero-subhead">
+        你不需要团队，不需要办公室，甚至不需要每天工作八小时——
+        你只需要一套比你更努力的系统。
+      </p>
+    </div>
+    <div class="hero-bottom">
+      <div class="byline">作者 · Solopreneur研究室 &nbsp;|&nbsp; 阅读约需 8 分钟</div>
+    </div>
+  </div>
+  <div class="hero-panel">
+    <div class="pull-stat">
+      <span class="stat-number">90%</span>
+      <span class="stat-label">可实现的利润率上限<br>零员工模型</span>
+    </div>
+    <div class="divider-panel"></div>
+    <div class="side-quote">
+      "你以为你是<span>老板</span>，<br>其实你只是给自己打工的<span>员工</span>。"
+    </div>
+    <div class="divider-panel"></div>
+    <div class="pull-stat">
+      <span class="stat-number">20h</span>
+      <span class="stat-label">每周工时目标<br>年入 $150,000+</span>
+    </div>
+    <div class="panel-note">以上数字基于当前一人公司生态的真实案例</div>
+  </div>
+</section>
+
+<!-- ARTICLE BODY -->
+<div class="article-wrap">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar-left">
+    <span class="sidebar-label">目录 · Contents</span>
+    <span class="toc-item"><span class="toc-num">01</span>你没有公司</span>
+    <span class="toc-item"><span class="toc-num">02</span>打工人的谎言</span>
+    <span class="toc-item"><span class="toc-num">03</span>系统才是老板</span>
+    <span class="toc-item"><span class="toc-num">04</span>AI是你的团队</span>
+    <span class="toc-item"><span class="toc-num">05</span>找准你的战场</span>
+    <span class="toc-item"><span class="toc-num">06</span>五步行动路径</span>
+  </aside>
+
+  <!-- MAIN ARTICLE -->
+  <main class="main-content">
+
+    <p class="drop-cap-para">
+      几年前，"个人创业"还意味着一个人扛着摄影包跑东跑西，或者守在格子间外接单子、熬夜改稿、周末也不敢休息。那是一种叫做"自由职业"的生活——听起来很自由，干起来比打工还累。
+    </p>
+
+    <p class="body-para">
+      但现在，有一种人悄悄地活出了另一种版本：他们一个人，年入数百万，利润率超过90%，每周工作时间不超过20小时，没有员工，没有办公室，也没有投资人。
+    </p>
+
+    <p class="body-para">
+      他们不是什么天才，也不是靠运气——他们只是比大多数人早一步弄明白了一件事：<span class="em-text">真正的财富，来自于你构建的系统，而不是你付出的时间。</span>
+    </p>
+
+    <!-- SECTION 1 -->
+    <h2 class="section-head">
+      <span class="num">01 · 你没有公司，你只是一个高薪打工人</span>
+      拿掉"独立"的滤镜
+    </h2>
+
+    <p class="body-para">
+      很多人创业的第一步，是给自己注册一个公司，然后——开始做所有的事情。写文案、做设计、打客服电话、跑报销、发社交媒体、改PPT……每天忙得像一台永动机。
+    </p>
+
+    <div class="pull-quote">
+      <p>你以为自己是老板，其实你只是<span class="highlight">给自己打工的员工</span>——而且还是那种没有五险一金、没有年假、不能请假的那种。</p>
+    </div>
+
+    <p class="body-para">
+      这是个陷阱。而且是个特别隐蔽的陷阱，因为它包装得看起来像是"敬业"和"负责任"。
+    </p>
+
+    <p class="body-para">
+      真正的业务所有者，做的是完全不同的事情：他们的工作是<span class="em-text">设计系统</span>，而不是运行系统。一旦系统搭好，钱就应该在他们睡觉、旅行、打游戏的时候继续进来。如果做不到，那不叫"拥有一家公司"，那叫"换了个地方打工"。
+    </p>
+
+    <!-- SECTION 2 -->
+    <h2 class="section-head">
+      <span class="num">02 · 停止卖时间，开始用杠杆</span>
+      财富的底层逻辑
+    </h2>
+
+    <p class="body-para">
+      穷人卖劳动，中产卖技能，而真正富有的人，卖的是<span class="em-text">系统的产出</span>。
+    </p>
+
+    <p class="body-para">
+      这不是什么新鲜道理，巴菲特说过，Naval Ravikant也说过。但在过去，这句话听起来像是富人的专利——毕竟，构建一个系统需要团队、需要资本、需要资源。
+    </p>
+
+    <p class="body-para">
+      现在不一样了。
+    </p>
+
+    <p class="body-para">
+      AI的出现，把"构建系统"的门槛砸到了地板上。一个普通人，可以用AI来写文案、做客服、分析数据、生成代码；可以用自动化工具把重复流程串联起来；可以把执行性工作外包给全球各地的低成本协作者——而自己，只需要做最重要的那20%的决策。
+    </p>
+
+    <div class="callout-box">
+      <h4>三种杠杆 · Three Forms of Leverage</h4>
+      <ul>
+        <li><span class="li-bullet">→</span><div><strong style="color:var(--paper);font-size:14px;">代码</strong><br>写一次，永远运行。你的工具24小时不休息。</div></li>
+        <li><span class="li-bullet">→</span><div><strong style="color:var(--paper);font-size:14px;">内容</strong><br>一篇好文章或视频，可以帮你获客数年。</div></li>
+        <li><span class="li-bullet">→</span><div><strong style="color:var(--paper);font-size:14px;">系统</strong><br>自动化流程 + 外包执行 = 你的隐形团队。</div></li>
+      </ul>
+    </div>
+
+    <p class="body-para">
+      当你把这三种杠杆叠加在一起，你的时间和金钱之间的关系就会发生一个根本性的断裂——你的收入，开始与你的工时脱钩。这才是财富自由的本质。
+    </p>
+
+    <!-- SECTION 3 -->
+    <h2 class="section-head">
+      <span class="num">03 · AI是你的团队，外包是你的员工</span>
+      搭建你的"智能堆栈"
+    </h2>
+
+    <p class="body-para">
+      想象一下这样一个业务：你专注于一个具体的痛点，比如帮助独立律师事务所自动化客户跟进流程。你用Claude或GPT搭建一套对话机器人，用Zapier把它和邮件、日历、CRM串联，用Loom录制操作教程，用Gumroad或Stripe收款，用一个菲律宾的兼职助手处理偶发的人工客服需求。
+    </p>
+
+    <p class="body-para">
+      你自己做什么？你负责产品方向、关键客户关系、以及每周检查数据仪表盘。每周大概15到20小时。
+    </p>
+
+    <div class="pull-quote">
+      <p>这不是遥远的未来，这是<span class="highlight">今天已经在发生</span>的事情。问题只是：你打算什么时候开始？</p>
+    </div>
+
+    <p class="body-para">
+      这套"智能堆栈"（Agentic Stack）的核心逻辑是：<span class="em-text">让工具做重复的事，让人来做需要判断的事，让你自己只做需要远见的事。</span>每一层都有它合适的承担者，而你永远在最顶层。
+    </p>
+
+    <!-- SECTION 4 -->
+    <h2 class="section-head">
+      <span class="num">04 · 找准你的战场</span>
+      精准痛点 > 宏大愿景
+    </h2>
+
+    <p class="body-para">
+      很多人在创业时，喜欢追求"大市场"和"颠覆性创新"。但对于一人公司来说，这是最危险的思维方式。
+    </p>
+
+    <p class="body-para">
+      你不需要解决全人类的问题。你只需要找到一个<span class="em-text">具体的、让人愿意掏钱解决的小痛点</span>，然后在这个小圈子里做到极致。
+    </p>
+
+    <p class="body-para">
+      好的利基市场长什么样？它通常满足三个条件：第一，你自己对这个领域有真实的热情或经验，不容易半途而废；第二，目标用户有明确的、反复发生的痛点，而不是可有可无的需求；第三，市场足够小，大公司懒得做，但又足够大，能养活你。
+    </p>
+
+    <p class="body-para">
+      最开始，靠直觉去找方向没问题。但一旦开始跑起来，<span class="em-text">数据就是你唯一的朋友</span>——哪个渠道带来的客户质量最高？哪类内容的转化率最好？哪个功能让用户最愿意续费？这些问题，要用数字来回答，不能靠感觉。
+    </p>
+
+    <!-- SECTION 5 -->
+    <h2 class="section-head">
+      <span class="num">05 · 重新定义成功</span>
+      业务为你服务，不是你为业务服务
+    </h2>
+
+    <p class="body-para">
+      在你开始之前，有一件事必须先想清楚：你想要什么样的生活？
+    </p>
+
+    <p class="body-para">
+      不是"我想要很多钱"——而是：你想在哪里工作？你想每天花多少小时在屏幕前？你希望业务里有哪些人，不有哪些人？你的时间里，哪些部分是绝对不能被工作侵占的？
+    </p>
+
+    <p class="body-para">
+      年入150万、每周工作60小时，和年入80万、每周工作20小时，这是完全不同的两种生意，也是完全不同的两种人生。没有对错，只有你的选择。
+    </p>
+
+    <div class="pull-quote">
+      <p>很多人创业是为了自由，结果却<span class="highlight">把自己关进了一个更小的笼子</span>里——因为他们建的是一份"工作"，不是一套"系统"。</p>
+    </div>
+
+    <p class="body-para">
+      把你现在的工作想象成你的"天使投资人"——它提供稳定现金流，让你有子弹去测试、去迭代、去慢慢构建那个会最终取代它的系统。不要着急辞职，要着急<span class="em-text">开始构建</span>。
+    </p>
+
+  </main>
+
+  <!-- RIGHT SIDEBAR -->
+  <aside class="sidebar-right">
+    <div class="sidebar-card dark">
+      <h5>关键数字</h5>
+      <span class="big-stat">$150K</span>
+      <p>一人公司可实现的年收入目标，配合20小时工作周</p>
+    </div>
+
+    <div class="sidebar-card">
+      <h5>核心工具栈</h5>
+      <p>AI写作 · 自动化流程 · 低代码工具 · 全球外包平台 · 数字支付系统</p>
+    </div>
+
+    <div class="sidebar-card dark">
+      <h5>最小可行供给</h5>
+      <span class="big-stat">MVO</span>
+      <p>最快速度验证想法能否赚钱<br>收入是唯一有效的验证</p>
+    </div>
+
+    <div class="sidebar-card">
+      <h5>选择利基的三条件</h5>
+      <p>① 你有真实热情<br>② 用户有反复痛点<br>③ 市场小而精准</p>
+    </div>
+
+    <div class="sidebar-card">
+      <h5>现在你的工作是</h5>
+      <p>你的天使投资人，而不仅仅是你的收入来源。用它资助自由，不是资助消费。</p>
+    </div>
+  </aside>
+
+</div>
+
+<!-- FOOTER / ACTION STEPS -->
+<footer class="article-footer">
+  <div>
+    <p class="footer-manifesto">
+      停止做<br>
+      <span class="line-accent">苦力型</span><br>
+      自由职业者。<br><br>
+      开始成为<br>
+      系统的<span class="line-accent">拥有者</span>。
+    </p>
+  </div>
+
+  <div class="footer-steps">
+    <div class="step-item">
+      <span class="step-num">01</span>
+      <div class="step-text">
+        <strong>找到你的痴迷利基</strong>
+        <p>交叉点：你热爱的 × 别人愿意付钱的 × 大公司懒得做的</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <span class="step-num">02</span>
+      <div class="step-text">
+        <strong>快速出手，用MVO验证</strong>
+        <p>别完美主义，先卖出去第一单。收入才是真正的验证。</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <span class="step-num">03</span>
+      <div class="step-text">
+        <strong>记录并自动化每一个重复动作</strong>
+        <p>你做了两次的事，就要思考能不能自动化或外包掉。</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <span class="step-num">04</span>
+      <div class="step-text">
+        <strong>用数据，不用感觉</strong>
+        <p>规模化阶段，每一个决策都要有数据支撑。</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <span class="step-num">05</span>
+      <div class="step-text">
+        <strong>耐心。这是一场长跑。</strong>
+        <p>系统不是一夜建成的，但一旦跑起来，就是复利。</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="bottom-bar">
+  <span>SOLOPRENEUR DISPATCH · 一人公司时代</span>
+  <span class="bottom-tag">构建系统 · 拥有自由 · 实现财富</span>
+</div>
+
+</body>
+</html>
